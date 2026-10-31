@@ -18,6 +18,14 @@ jobs:
           if ls *.zip 1> /dev/null 2>&1; then
             echo "Found ZIP archive, extracting..."
             unzip -o *.zip
+            rm -f *.zip
+          fi
+          if [ ! -f "package.json" ]; then
+            SUBDIR=$(find . -maxdepth 2 -name "package.json" -exec dirname {} \; | head -n 1)
+            if [ -n "$SUBDIR" ] && [ "$SUBDIR" != "." ]; then
+              echo "Moving files from $SUBDIR to root..."
+              cp -r $SUBDIR/* .
+            fi
           fi
           ls -la
 
@@ -25,7 +33,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: 'npm'
 
       - name: Setup Java 17 (JDK)
         uses: actions/setup-java@v4
@@ -36,10 +43,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Node Dependencies
+        run: npm install --legacy-peer-deps
 
-      - name: Build Web App
+      - name: Build Web Application
         run: npm run build
         env:
           NODE_ENV: production
@@ -61,7 +68,7 @@ jobs:
           mkdir -p output-apk
           cp android/app/build/outputs/apk/debug/app-debug.apk output-apk/NanoMock-Studio-debug.apk
 
-      - name: Upload APK File
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: NanoMock-Studio-APK
